@@ -114,16 +114,18 @@ docker-compose restart frontend
 ngrok http 5173
 ```
 
-または、フロントエンドは `http://localhost:5173` でローカルアクセスでもOK。
+または、フロントエンドは `http://localhost:5173` でローカルアクセスでも OK。
 
 ---
 
 ## 🎉 完了！
 
 ### バックエンド
+
 `https://xxxx.ngrok-free.app` でアクセス可能
 
 ### フロントエンド
+
 - ngrok で公開した場合: `https://yyyy.ngrok-free.app`
 - ローカルのみ: `http://localhost:5173`
 
@@ -177,6 +179,7 @@ docker-compose restart frontend
 ### ngrok の管理画面
 
 ngrok 起動中に http://localhost:4040 にアクセスすると：
+
 - リクエストの履歴
 - リクエスト/レスポンスの詳細
 - デバッグ情報
@@ -213,12 +216,14 @@ chmod +x start-ngrok.sh
 ## 💰 料金
 
 ### 無料プラン
+
 - ✅ 制限なしの HTTP/HTTPS トンネル
 - ✅ 十分な帯域幅
 - ⚠️ URL が毎回変わる
 - ⚠️ ngrok のバナーが表示される
 
 ### 有料プラン（$8/月〜）
+
 - ✅ カスタム/固定ドメイン
 - ✅ バナーなし
 - ✅ 複数トンネル同時使用
@@ -233,6 +238,7 @@ chmod +x start-ngrok.sh
 ### ngrok に接続できない
 
 **確認:**
+
 1. Docker が起動しているか: `docker-compose ps`
 2. ローカルで動作しているか: `curl http://localhost:8080/api/classes`
 3. ngrok が正しく起動しているか
@@ -246,6 +252,7 @@ chmod +x start-ngrok.sh
 ### フロントエンドがバックエンドに接続できない
 
 **確認:**
+
 1. `.env` の `VITE_API_URL` が正しい ngrok URL になっているか
 2. フロントエンドを再起動したか: `docker-compose restart frontend`
 
@@ -262,6 +269,7 @@ services:
 ```
 
 再起動：
+
 ```bash
 docker-compose restart backend
 ```
