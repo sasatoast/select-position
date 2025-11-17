@@ -4,12 +4,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
       - ./backend:/root
       - backend-data:/root
     environment:
       - GIN_MODE=release
+      - FRONTEND_URL=https://あなたのvercel URL.vercel.app
     restart: unless-stopped
     networks:
       - app-network
@@ -19,7 +20,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -35,4 +36,3 @@ volumes:
 networks:
   app-network:
     driver: bridge
-
