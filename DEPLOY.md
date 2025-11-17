@@ -1,273 +1,311 @@
-# 🚀 デプロイ手順（Railway）
+# 🚀 デプロイ手順（ngrok）
 
-このアプリを **Railway** にデプロイして、インターネット上で公開する手順です。
+このアプリを **ngrok** でインターネットに公開する手順です。
 
 ## 📋 必要なもの
 
-- GitHubアカウント
-- Railwayアカウント（無料）https://railway.app/
+- ngrok アカウント（無料）https://ngrok.com/
+- ローカルで Docker が動いていること
 
-## ✨ Railwayの利点
+## ✨ ngrok の利点
 
-✅ **$5の無料クレジット/月**（使い切るまで課金なし）
-✅ **永続ボリューム対応**（SQLiteが使える）
-✅ **Docker対応**（そのまま使える）
-✅ **GitHubと連携**（自動デプロイ）
-✅ **UIが超簡単**
+✅ **完全無料**（無料プランで十分）
+✅ **コード変更不要**（SQLite そのまま使える）
+✅ **今すぐ使える**（5 分で公開）
+✅ **セットアップ超簡単**
 
-## 🔧 デプロイ手順
+## ⚠️ 注意点
 
-### 1. GitHubにプッシュ
+- **PC を起動し続ける必要がある**
+- **URL が毎回変わる**（無料プランの場合）
+  - 有料プラン（$8/月）で URL を固定できる
+- 友人と「今から使うよ！」という感じで共有する形
 
-すでにプッシュ済みであればスキップしてOKです。
+---
 
-```bash
-git add .
-git commit -m "Add deployment configuration"
-git push
-```
+## 🔧 セットアップ手順
 
-### 2. Railwayアカウント作成
-
-1. https://railway.app/ にアクセス
-2. 「Login」をクリック
-3. 「Login with GitHub」でGitHubアカウントと連携
-4. 初回は$5の無料クレジットが付与されます
-
-### 3. 新しいプロジェクトを作成
-
-1. Railwayダッシュボードで「New Project」をクリック
-2. 「Deploy from GitHub repo」を選択
-3. リポジトリを連携（初回のみ）
-4. `sasatoast/select-position` リポジトリを選択
-
-### 4. バックエンドをデプロイ
-
-#### 4-1. サービスの設定
-
-Railwayが自動的に検出したら：
-
-1. `backend` サービスを選択
-2. 「Settings」タブを開く
-
-#### 4-2. 環境変数を設定
-
-「Variables」タブで以下を追加：
-
-| Variable | Value |
-|----------|-------|
-| `GIN_MODE` | `release` |
-| `PORT` | `8080` |
-
-#### 4-3. ボリュームを追加（重要！）
-
-データベースを永続化するため：
-
-1. 「Settings」タブ
-2. 「Volumes」セクションで「+ New Volume」をクリック
-3. **Mount Path**: `/root`
-
-保存すると自動的にデプロイが始まります。
-
-#### 4-4. 公開URLを取得
-
-1. 「Settings」タブ
-2. 「Networking」セクション
-3. 「Generate Domain」をクリック
-
-URLが生成されます（例: `selectposition-backend-production.up.railway.app`）
-
-### 5. フロントエンドをデプロイ
-
-#### 5-1. フロントエンドサービスを追加
-
-1. プロジェクトのルートに戻る
-2. 「+ New」をクリック
-3. 「GitHub Repo」→ 同じリポジトリを選択
-
-#### 5-2. フロントエンドの設定
-
-1. `frontend` サービスを選択
-2. 「Settings」タブ
-3. **Root Directory**: `frontend` に設定
-4. **Build Command**: `npm install && npm run build`
-5. **Start Command**: `npx serve -s dist -l $PORT`
-
-#### 5-3. 環境変数を設定
-
-「Variables」タブで以下を追加：
-
-| Variable | Value |
-|----------|-------|
-| `VITE_API_URL` | `https://あなたのバックエンドURL.railway.app/api` |
-
-バックエンドのURLは前の手順で取得したものを使用してください。
-
-#### 5-4. 公開URLを取得
-
-1. 「Settings」タブ
-2. 「Networking」セクション
-3. 「Generate Domain」をクリック
-
-### 6. バックエンドのCORS設定を更新
-
-バックエンドの環境変数に追加：
-
-1. `backend` サービスを選択
-2. 「Variables」タブ
-3. 以下を追加：
-
-| Variable | Value |
-|----------|-------|
-| `FRONTEND_URL` | `https://あなたのフロントエンドURL.railway.app` |
-
-保存すると自動的に再デプロイされます。
-
-### 7. 完了！🎉
-
-フロントエンドのURLにアクセスすると、アプリが動作します！
-
-例: `https://selectposition-frontend-production.up.railway.app`
-
-## 💡 Railway の使い方
-
-### 自動デプロイ
-
-GitHubにプッシュすると自動的に再デプロイされます：
+### 1. ngrok をインストール
 
 ```bash
-git add .
-git commit -m "新機能追加"
-git push
+# Homebrewでインストール（Mac）
+brew install ngrok/ngrok/ngrok
 ```
 
-### ログの確認
+### 2. ngrok アカウント作成
 
-1. サービスを選択
-2. 「Deployments」タブ
-3. 最新のデプロイをクリック
-4. 「View Logs」でログを確認
+1. https://ngrok.com/ にアクセス
+2. 「Sign up」をクリック（GitHub アカウントで連携可能）
+3. ダッシュボードに移動
 
-### 使用量の確認
+### 3. 認証トークンを設定
 
-1. プロジェクト画面右上の「Usage」をクリック
-2. 月の使用量と残りクレジットを確認
+1. ngrok ダッシュボードで「Your Authtoken」を確認
+2. トークンをコピー
+3. ターミナルで実行：
 
-## ⚠️ 料金について
+```bash
+ngrok config add-authtoken YOUR_TOKEN_HERE
+```
 
-### 無料枠
+### 4. ローカルでアプリを起動
 
-- **$5/月の無料クレジット**
-- 使い切るまで課金なし
-- 小規模なアプリなら十分
+```bash
+cd /Users/ryo/SelectPosition
 
-### 使用量の目安
+# Docker Composeで起動
+docker-compose up -d
 
-- バックエンド（常時起動）: 約$3-4/月
-- フロントエンド（静的サイト）: 約$0.5-1/月
-- **合計**: 約$4-5/月 → **無料枠内で収まる！**
+# 起動確認
+docker-compose ps
+```
 
-### 無料クレジットを使い切ったら
+両方のコンテナが `Up` になっていれば OK です。
 
-1. クレジットカードを登録（従量課金）
-2. サービスを停止
-3. 他のサービスに移行（Fly.io など）
+### 5. バックエンドを公開
+
+```bash
+# バックエンド（ポート8080）を公開
+ngrok http 8080
+```
+
+以下のような画面が表示されます：
+
+```
+ngrok
+
+Session Status                online
+Account                       your-account (Plan: Free)
+Version                       3.x.x
+Region                        Japan (jp)
+Latency                       -
+Web Interface                 http://127.0.0.1:4040
+Forwarding                    https://xxxx-xxx-xxx.ngrok-free.app -> http://localhost:8080
+
+Connections                   ttl     opn     rt1     rt5     p50     p90
+                              0       0       0.00    0.00    0.00    0.00
+```
+
+**重要:** `Forwarding` の `https://xxxx-xxx-xxx.ngrok-free.app` が公開 URL です！
+
+### 6. フロントエンドの設定を更新
+
+別のターミナルを開いて：
+
+```bash
+cd /Users/ryo/SelectPosition/frontend
+
+# .envファイルを作成/更新
+echo "VITE_API_URL=https://あなたのngrok URL.ngrok-free.app/api" > .env
+
+# 例:
+# echo "VITE_API_URL=https://1234-567-890.ngrok-free.app/api" > .env
+
+# フロントエンドを再起動
+docker-compose restart frontend
+```
+
+### 7. フロントエンドも公開（オプション）
+
+別のターミナルで：
+
+```bash
+# フロントエンド（ポート5173）を公開
+ngrok http 5173
+```
+
+または、フロントエンドは `http://localhost:5173` でローカルアクセスでもOK。
+
+---
+
+## 🎉 完了！
+
+### バックエンド
+`https://xxxx.ngrok-free.app` でアクセス可能
+
+### フロントエンド
+- ngrok で公開した場合: `https://yyyy.ngrok-free.app`
+- ローカルのみ: `http://localhost:5173`
+
+### 友人と共有する方法
+
+1. ngrok の URL（バックエンド）を確認
+2. フロントエンドの ngrok URL を友人に教える
+3. みんなでアクセス！
+
+---
+
+## 💡 使い方
+
+### 起動するとき
+
+```bash
+# 1. Dockerを起動
+cd /Users/ryo/SelectPosition
+docker-compose up -d
+
+# 2. バックエンドを公開
+ngrok http 8080
+
+# 3. （別ターミナル）フロントエンドを公開
+ngrok http 5173
+```
+
+### 停止するとき
+
+```bash
+# ngrokを停止（Ctrl+C）
+
+# Dockerを停止
+docker-compose down
+```
+
+### 次回起動時
+
+ngrok の URL が変わるので、フロントエンドの `.env` を更新：
+
+```bash
+cd frontend
+echo "VITE_API_URL=https://新しいngrok URL.ngrok-free.app/api" > .env
+docker-compose restart frontend
+```
+
+---
+
+## 🚀 便利な使い方
+
+### ngrok の管理画面
+
+ngrok 起動中に http://localhost:4040 にアクセスすると：
+- リクエストの履歴
+- リクエスト/レスポンスの詳細
+- デバッグ情報
+
+が見られます！
+
+### スクリプトで簡単起動
+
+`start-ngrok.sh` を作成：
+
+```bash
+#!/bin/bash
+
+# Dockerを起動
+docker-compose up -d
+
+# 3秒待つ
+sleep 3
+
+# ngrokでバックエンドを公開
+echo "バックエンドを公開中..."
+ngrok http 8080
+```
+
+実行：
+
+```bash
+chmod +x start-ngrok.sh
+./start-ngrok.sh
+```
+
+---
+
+## 💰 料金
+
+### 無料プラン
+- ✅ 制限なしの HTTP/HTTPS トンネル
+- ✅ 十分な帯域幅
+- ⚠️ URL が毎回変わる
+- ⚠️ ngrok のバナーが表示される
+
+### 有料プラン（$8/月〜）
+- ✅ カスタム/固定ドメイン
+- ✅ バナーなし
+- ✅ 複数トンネル同時使用
+- ✅ より高速
+
+このアプリなら無料プランで十分です！
+
+---
 
 ## 🔧 トラブルシューティング
 
-### バックエンドに接続できない
+### ngrok に接続できない
 
-1. バックエンドのログを確認
-2. `PORT` 環境変数が設定されているか確認
-3. ボリュームがマウントされているか確認（`/root`）
+**確認:**
+1. Docker が起動しているか: `docker-compose ps`
+2. ローカルで動作しているか: `curl http://localhost:8080/api/classes`
+3. ngrok が正しく起動しているか
 
-### データが保存されない
+### 友人が「403 Forbidden」と表示される
 
-1. 「Settings」→「Volumes」でボリュームが追加されているか確認
-2. Mount Path が `/root` になっているか確認
+**原因:** ngrok の無料プランでは初回アクセス時に警告ページが表示される
 
-### フロントエンドがビルドエラー
+**解決:** 警告ページで「Visit Site」をクリックしてもらう
 
-1. `VITE_API_URL` が正しく設定されているか確認
-2. ログを確認して、ビルドコマンドが正しいか確認
+### フロントエンドがバックエンドに接続できない
 
-### 無料クレジットをすぐ使い切ってしまう
+**確認:**
+1. `.env` の `VITE_API_URL` が正しい ngrok URL になっているか
+2. フロントエンドを再起動したか: `docker-compose restart frontend`
 
-1. 使っていないサービスを停止
-2. 開発時はローカルで動作確認
-3. 本番デプロイは必要なときだけ
+### CORS エラーが出る
 
-## 📊 Railwayの管理画面
-
-### Metrics（メトリクス）
-
-- CPU使用率
-- メモリ使用率
-- ネットワーク使用量
-
-### Variables（環境変数）
-
-- 環境変数の追加・編集・削除
-- 変更すると自動的に再デプロイ
-
-### Settings（設定）
-
-- Root Directory: サブディレクトリの指定
-- Build Command: ビルドコマンド
-- Start Command: 起動コマンド
-- Volumes: 永続ボリューム
-
-## 🔄 更新の流れ
+バックエンドの環境変数を設定：
 
 ```bash
-# 1. コードを修正
-vim frontend/src/App.tsx
-
-# 2. ローカルで確認
-docker-compose up
-
-# 3. コミット & プッシュ
-git add .
-git commit -m "機能改善"
-git push
-
-# 4. Railwayが自動的に再デプロイ（数分待つ）
+# docker-compose.ymlに追加
+services:
+  backend:
+    environment:
+      - FRONTEND_URL=https://あなたのフロントエンドのngrok URL.ngrok-free.app
 ```
+
+再起動：
+```bash
+docker-compose restart backend
+```
+
+---
+
+## 📝 ワークフロー例
+
+### 友人と授業の分担を決めるとき
+
+```bash
+# 1. あなた: アプリを起動
+cd /Users/ryo/SelectPosition
+docker-compose up -d
+ngrok http 8080  # バックエンド
+ngrok http 5173  # フロントエンド（別ターミナル）
+
+# 2. あなた: URLをLINEなどで共有
+「今から使えるよ！
+ https://xxxx.ngrok-free.app
+ で開いてね」
+
+# 3. 友人: URLにアクセス
+ブラウザで開く → 警告ページで「Visit Site」をクリック
+
+# 4. みんな: 授業を作成して分担を決める
+「数学IA - 11/18」を作成
+→ 各自が担当する時間帯をクリックして名前を入力
+
+# 5. 完了: データは自動保存
+次回起動時も同じデータが残っている
+```
+
+---
 
 ## 🆘 サポート
 
 問題が発生した場合：
 
-1. Railwayのドキュメント: https://docs.railway.app/
-2. Railwayのコミュニティ: https://discord.gg/railway
-3. GitHubのIssue
+1. ngrok のドキュメント: https://ngrok.com/docs
+2. ngrok のコミュニティ: https://ngrok.com/slack
+3. GitHub の Issue
 
 ---
 
-## 📝 設定まとめ
-
-### バックエンド設定
-
-```
-Root Directory: backend
-Environment Variables:
-  - GIN_MODE=release
-  - PORT=8080
-  - FRONTEND_URL=https://your-frontend.railway.app
-Volume:
-  - Mount Path: /root
-```
-
-### フロントエンド設定
-
-```
-Root Directory: frontend
-Build Command: npm install && npm run build
-Start Command: npx serve -s dist -l $PORT
-Environment Variables:
-  - VITE_API_URL=https://your-backend.railway.app/api
-```
-
----
-
-これでRailwayへのデプロイは完璧です！🚂✨
+これで ngrok を使ったデプロイは完璧です！🎉
+PC を起動している間だけ、友人とアプリを共有できます。
