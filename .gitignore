@@ -7,6 +7,8 @@ backend/main
 frontend/node_modules
 frontend/dist
 frontend/.vite
+frontend/.env.local
+frontend/.env.production.local
 
 # OS
 .DS_Store

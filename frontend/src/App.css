@@ -109,6 +109,15 @@
   background: #ff3838;
 }
 
+.btn-copy {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-copy:hover {
+  background: #45a049;
+}
+
 .btn-small {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
@@ -154,9 +163,31 @@
   border-bottom: 2px solid #f0f0f0;
 }
 
+.class-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .class-header h2 {
   color: #667eea;
   font-size: 1.75rem;
+  margin: 0;
+}
+
+.class-date {
+  background: #e8eaf6;
+  color: #667eea;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.class-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .time-slots {
@@ -225,5 +256,16 @@
 
   .btn {
     width: 100%;
+  }
+
+  .class-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .class-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

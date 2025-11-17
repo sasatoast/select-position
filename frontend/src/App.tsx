@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-const API_URL = 'http://localhost:8080/api';
+// 環境変数からAPIのURLを取得（デフォルト: ローカル）
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 interface TimeSlot {
   id: number;
@@ -13,6 +14,7 @@ interface TimeSlot {
 interface Class {
   id: number;
   name: string;
+  date: string;
   time_slots: TimeSlot[];
 }
 
@@ -20,6 +22,7 @@ function App() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [className, setClassName] = useState('');
+  const [classDate, setClassDate] = useState('');
   const [timeSlots, setTimeSlots] = useState<string[]>([
     '',
     '',
@@ -63,18 +66,36 @@ function App() {
         },
         body: JSON.stringify({
           name: className,
+          date: classDate,
           time_slots: filledSlots,
         }),
       });
 
       if (response.ok) {
         setClassName('');
+        setClassDate('');
         setTimeSlots(['', '', '', '', '', '']);
         setShowCreateForm(false);
         fetchClasses();
       }
     } catch (error) {
       console.error('Error creating class:', error);
+    }
+  };
+
+  const duplicateClass = async (classId: number) => {
+    if (!confirm('この授業を複製しますか？（担当者はクリアされます）')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/classes/${classId}/duplicate`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        fetchClasses();
+      }
+    } catch (error) {
+      console.error('Error duplicating class:', error);
     }
   };
 
@@ -145,6 +166,13 @@ function App() {
               onChange={(e) => setClassName(e.target.value)}
               className="input"
             />
+            <input
+              type="date"
+              value={classDate}
+              onChange={(e) => setClassDate(e.target.value)}
+              className="input"
+              placeholder="日付（任意）"
+            />
             <div className="time-slots-input">
               <h3>時間帯を入力 (最大6つ)</h3>
               {timeSlots.map((slot, index) => (
@@ -171,6 +199,7 @@ function App() {
                 onClick={() => {
                   setShowCreateForm(false);
                   setClassName('');
+                  setClassDate('');
                   setTimeSlots(['', '', '', '', '', '']);
                 }}
               >
@@ -191,13 +220,26 @@ function App() {
           classes.map((classItem) => (
             <div key={classItem.id} className="class-card">
               <div className="class-header">
-                <h2>{classItem.name}</h2>
-                <button
-                  className="btn btn-danger btn-small"
-                  onClick={() => deleteClass(classItem.id)}
-                >
-                  削除
-                </button>
+                <div className="class-title">
+                  <h2>{classItem.name}</h2>
+                  {classItem.date && (
+                    <span className="class-date">{classItem.date}</span>
+                  )}
+                </div>
+                <div className="class-actions">
+                  <button
+                    className="btn btn-copy btn-small"
+                    onClick={() => duplicateClass(classItem.id)}
+                  >
+                    📋 複製
+                  </button>
+                  <button
+                    className="btn btn-danger btn-small"
+                    onClick={() => deleteClass(classItem.id)}
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
               <div className="time-slots">
                 {classItem.time_slots.map((slot) => (

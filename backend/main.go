@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -20,11 +21,13 @@ type TimeSlot struct {
 type Class struct {
 	ID        int        `json:"id"`
 	Name      string     `json:"name"`
+	Date      string     `json:"date"`
 	TimeSlots []TimeSlot `json:"time_slots"`
 }
 
 type CreateClassRequest struct {
 	Name      string   `json:"name"`
+	Date      string   `json:"date"`
 	TimeSlots []string `json:"time_slots"`
 }
 
@@ -45,7 +48,8 @@ func initDB() {
 	createClassTable := `
 	CREATE TABLE IF NOT EXISTS classes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
+		name TEXT NOT NULL,
+		date TEXT DEFAULT ''
 	);`
 
 	createTimeSlotTable := `
@@ -73,8 +77,15 @@ func main() {
 	r := gin.Default()
 
 	// CORS設定
+	allowedOrigins := []string{"http://localhost:5173", "http://localhost:5174"}
+	
+	// 本番環境のフロントエンドURLを環境変数から取得
+	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+		allowedOrigins = append(allowedOrigins, frontendURL)
+	}
+	
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		AllowCredentials: true,
@@ -84,16 +95,23 @@ func main() {
 	r.GET("/api/classes", getClasses)
 	r.GET("/api/classes/:id", getClass)
 	r.POST("/api/classes", createClass)
+	r.POST("/api/classes/:id/duplicate", duplicateClass)
 	r.DELETE("/api/classes/:id", deleteClass)
 	r.PUT("/api/classes/:classId/slots/:slotId", assignSlot)
 
-	log.Println("Server starting on :8080")
-	r.Run(":8080")
+	// ポート番号を環境変数から取得（デフォルト: 8080）
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	
+	log.Printf("Server starting on :%s\n", port)
+	r.Run(":" + port)
 }
 
 // 授業一覧取得
 func getClasses(c *gin.Context) {
-	rows, err := db.Query("SELECT id, name FROM classes ORDER BY id DESC")
+	rows, err := db.Query("SELECT id, name, date FROM classes ORDER BY id DESC")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -103,7 +121,7 @@ func getClasses(c *gin.Context) {
 	var classes []Class
 	for rows.Next() {
 		var class Class
-		if err := rows.Scan(&class.ID, &class.Name); err != nil {
+		if err := rows.Scan(&class.ID, &class.Name, &class.Date); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -143,7 +161,7 @@ func getClass(c *gin.Context) {
 	id := c.Param("id")
 	
 	var class Class
-	err := db.QueryRow("SELECT id, name FROM classes WHERE id = ?", id).Scan(&class.ID, &class.Name)
+	err := db.QueryRow("SELECT id, name, date FROM classes WHERE id = ?", id).Scan(&class.ID, &class.Name, &class.Date)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Class not found"})
@@ -184,7 +202,7 @@ func createClass(c *gin.Context) {
 	}
 
 	// 授業を作成
-	result, err := db.Exec("INSERT INTO classes (name) VALUES (?)", req.Name)
+	result, err := db.Exec("INSERT INTO classes (name, date) VALUES (?, ?)", req.Name, req.Date)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -262,5 +280,71 @@ func assignSlot(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Slot assigned successfully"})
+}
+
+// 授業を複製
+func duplicateClass(c *gin.Context) {
+	id := c.Param("id")
+	
+	// 元の授業を取得
+	var originalClass Class
+	err := db.QueryRow("SELECT id, name, date FROM classes WHERE id = ?", id).Scan(&originalClass.ID, &originalClass.Name, &originalClass.Date)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Class not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// タイムスロットを取得
+	rows, err := db.Query("SELECT label, position FROM time_slots WHERE class_id = ? ORDER BY position", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var timeSlots []struct {
+		Label    string
+		Position int
+	}
+	for rows.Next() {
+		var slot struct {
+			Label    string
+			Position int
+		}
+		if err := rows.Scan(&slot.Label, &slot.Position); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		timeSlots = append(timeSlots, slot)
+	}
+
+	// 新しい授業を作成（日付は空にする）
+	result, err := db.Exec("INSERT INTO classes (name, date) VALUES (?, '')", originalClass.Name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	newClassID, err := result.LastInsertId()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// タイムスロットを複製（担当者は空にする）
+	for _, slot := range timeSlots {
+		_, err := db.Exec("INSERT INTO time_slots (class_id, label, assigned_to, position) VALUES (?, ?, '', ?)",
+			newClassID, slot.Label, slot.Position)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"id": newClassID, "message": "Class duplicated successfully"})
 }
 
