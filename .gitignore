@@ -1,0 +1,21 @@
+# Backend
+backend/classes.db
+backend/selectposition
+backend/main
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# OS
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+

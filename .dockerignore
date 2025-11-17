@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+
+# OS
+.DS_Store
+*.swp
+*.swo
+
+# IDE
+.vscode
+.idea
+*.iml
+
