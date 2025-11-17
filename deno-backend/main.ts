@@ -1,7 +1,6 @@
 /// <reference lib="deno.unstable" />
 
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { cors } from "https://deno.land/x/edge_cors@latest/src/cors.ts";
+import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 
 // Deno KVを初期化
 const kv = await Deno.openKv();
@@ -23,10 +22,10 @@ interface Class {
 
 // CORS設定
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://select-position.vercel.app",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Accept",
-  "Access-Control-Allow-Credentials": "true",
+  'Access-Control-Allow-Origin': 'https://select-position.vercel.app',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Accept',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // ユニークIDを生成
@@ -37,7 +36,7 @@ function generateId(): number {
 // メインハンドラー
 async function handler(req: Request): Promise<Response> {
   // CORS preflight
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
@@ -46,8 +45,8 @@ async function handler(req: Request): Promise<Response> {
 
   try {
     // GET /api/classes - 授業一覧取得
-    if (path === "/api/classes" && req.method === "GET") {
-      const entries = kv.list({ prefix: ["classes"] });
+    if (path === '/api/classes' && req.method === 'GET') {
+      const entries = kv.list({ prefix: ['classes'] });
       const classes: Class[] = [];
 
       for await (const entry of entries) {
@@ -58,29 +57,29 @@ async function handler(req: Request): Promise<Response> {
       classes.sort((a, b) => b.id - a.id);
 
       return new Response(JSON.stringify(classes), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // GET /api/classes/:id - 授業詳細取得
-    if (path.match(/^\/api\/classes\/\d+$/) && req.method === "GET") {
-      const id = parseInt(path.split("/").pop()!);
-      const result = await kv.get<Class>(["classes", id]);
+    if (path.match(/^\/api\/classes\/\d+$/) && req.method === 'GET') {
+      const id = parseInt(path.split('/').pop()!);
+      const result = await kv.get<Class>(['classes', id]);
 
       if (!result.value) {
-        return new Response(JSON.stringify({ error: "Class not found" }), {
+        return new Response(JSON.stringify({ error: 'Class not found' }), {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       return new Response(JSON.stringify(result.value), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // POST /api/classes - 授業作成
-    if (path === "/api/classes" && req.method === "POST") {
+    if (path === '/api/classes' && req.method === 'POST') {
       const body = await req.json();
       const { name, date, time_slots } = body;
 
@@ -89,7 +88,7 @@ async function handler(req: Request): Promise<Response> {
         (label: string, index: number) => ({
           id: generateId() + index,
           label,
-          assigned_to: "",
+          assigned_to: '',
           position: index,
         })
       );
@@ -97,32 +96,33 @@ async function handler(req: Request): Promise<Response> {
       const newClass: Class = {
         id: classId,
         name,
-        date: date || "",
+        date: date || '',
         time_slots: timeSlots,
       };
 
-      await kv.set(["classes", classId], newClass);
+      await kv.set(['classes', classId], newClass);
 
       return new Response(
-        JSON.stringify({ id: classId, message: "Class created successfully" }),
+        JSON.stringify({ id: classId, message: 'Class created successfully' }),
         {
           status: 201,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     // POST /api/classes/:id/duplicate - 授業複製
     if (
-      path.match(/^\/api\/classes\/\d+\/duplicate$/) && req.method === "POST"
+      path.match(/^\/api\/classes\/\d+\/duplicate$/) &&
+      req.method === 'POST'
     ) {
-      const id = parseInt(path.split("/")[3]);
-      const result = await kv.get<Class>(["classes", id]);
+      const id = parseInt(path.split('/')[3]);
+      const result = await kv.get<Class>(['classes', id]);
 
       if (!result.value) {
-        return new Response(JSON.stringify({ error: "Class not found" }), {
+        return new Response(JSON.stringify({ error: 'Class not found' }), {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
@@ -134,7 +134,7 @@ async function handler(req: Request): Promise<Response> {
         (slot, index) => ({
           id: generateId() + index,
           label: slot.label,
-          assigned_to: "",
+          assigned_to: '',
           position: slot.position,
         })
       );
@@ -142,54 +142,55 @@ async function handler(req: Request): Promise<Response> {
       const newClass: Class = {
         id: newClassId,
         name: originalClass.name,
-        date: "",
+        date: '',
         time_slots: newTimeSlots,
       };
 
-      await kv.set(["classes", newClassId], newClass);
+      await kv.set(['classes', newClassId], newClass);
 
       return new Response(
         JSON.stringify({
           id: newClassId,
-          message: "Class duplicated successfully",
+          message: 'Class duplicated successfully',
         }),
         {
           status: 201,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     // DELETE /api/classes/:id - 授業削除
-    if (path.match(/^\/api\/classes\/\d+$/) && req.method === "DELETE") {
-      const id = parseInt(path.split("/").pop()!);
-      await kv.delete(["classes", id]);
+    if (path.match(/^\/api\/classes\/\d+$/) && req.method === 'DELETE') {
+      const id = parseInt(path.split('/').pop()!);
+      await kv.delete(['classes', id]);
 
       return new Response(
-        JSON.stringify({ message: "Class deleted successfully" }),
+        JSON.stringify({ message: 'Class deleted successfully' }),
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     // PUT /api/classes/:classId/slots/:slotId - タイムスロット更新
     if (
-      path.match(/^\/api\/classes\/\d+\/slots\/\d+$/) && req.method === "PUT"
+      path.match(/^\/api\/classes\/\d+\/slots\/\d+$/) &&
+      req.method === 'PUT'
     ) {
-      const parts = path.split("/");
+      const parts = path.split('/');
       const classId = parseInt(parts[3]);
       const slotId = parseInt(parts[5]);
 
       const body = await req.json();
       const { assigned_to } = body;
 
-      const result = await kv.get<Class>(["classes", classId]);
+      const result = await kv.get<Class>(['classes', classId]);
 
       if (!result.value) {
-        return new Response(JSON.stringify({ error: "Class not found" }), {
+        return new Response(JSON.stringify({ error: 'Class not found' }), {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
@@ -197,44 +198,37 @@ async function handler(req: Request): Promise<Response> {
       const slotIndex = classData.time_slots.findIndex((s) => s.id === slotId);
 
       if (slotIndex === -1) {
-        return new Response(
-          JSON.stringify({ error: "Time slot not found" }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: 'Time slot not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       classData.time_slots[slotIndex].assigned_to = assigned_to;
-      await kv.set(["classes", classId], classData);
+      await kv.set(['classes', classId], classData);
 
       return new Response(
-        JSON.stringify({ message: "Slot assigned successfully" }),
+        JSON.stringify({ message: 'Slot assigned successfully' }),
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     // 404
-    return new Response(JSON.stringify({ error: "Not found" }), {
+    return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
 
 // サーバー起動
-console.log("🦕 Deno server running on port 8000");
+console.log('🦕 Deno server running on port 8000');
 serve(handler, { port: 8000 });
-
