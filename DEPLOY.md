@@ -1,11 +1,19 @@
-# 🚀 デプロイ手順
+# 🚀 デプロイ手順（Railway）
 
-このアプリを **Render** にデプロイして、インターネット上で公開する手順です。
+このアプリを **Railway** にデプロイして、インターネット上で公開する手順です。
 
 ## 📋 必要なもの
 
 - GitHubアカウント
-- Renderアカウント（無料）https://render.com/
+- Railwayアカウント（無料）https://railway.app/
+
+## ✨ Railwayの利点
+
+✅ **$5の無料クレジット/月**（使い切るまで課金なし）
+✅ **永続ボリューム対応**（SQLiteが使える）
+✅ **Docker対応**（そのまま使える）
+✅ **GitHubと連携**（自動デプロイ）
+✅ **UIが超簡単**
 
 ## 🔧 デプロイ手順
 
@@ -19,185 +27,247 @@ git commit -m "Add deployment configuration"
 git push
 ```
 
-### 2. Renderアカウント作成
+### 2. Railwayアカウント作成
 
-1. https://render.com/ にアクセス
-2. 「Get Started」または「Sign Up」をクリック
-3. GitHubアカウントで連携してサインアップ
+1. https://railway.app/ にアクセス
+2. 「Login」をクリック
+3. 「Login with GitHub」でGitHubアカウントと連携
+4. 初回は$5の無料クレジットが付与されます
 
-### 3. バックエンドをデプロイ
+### 3. 新しいプロジェクトを作成
 
-#### 3-1. 新しいWebサービスを作成
+1. Railwayダッシュボードで「New Project」をクリック
+2. 「Deploy from GitHub repo」を選択
+3. リポジトリを連携（初回のみ）
+4. `sasatoast/select-position` リポジトリを選択
 
-1. Renderダッシュボードで「New +」→「Web Service」を選択
-2. GitHubリポジトリを連携
-3. `sasatoast/select-position` リポジトリを選択
+### 4. バックエンドをデプロイ
 
-#### 3-2. バックエンドの設定
+#### 4-1. サービスの設定
 
-- **Name**: `selectposition-backend`（任意の名前でOK）
-- **Region**: `Singapore`（日本に近い）
-- **Branch**: `main`
-- **Root Directory**: `backend`
-- **Runtime**: `Docker`
-- **Instance Type**: `Free`
+Railwayが自動的に検出したら：
 
-#### 3-3. 環境変数を設定
+1. `backend` サービスを選択
+2. 「Settings」タブを開く
 
-「Advanced」→「Add Environment Variable」で以下を追加：
+#### 4-2. 環境変数を設定
 
-| Key | Value |
-|-----|-------|
-| GIN_MODE | release |
-| PORT | 8080 |
+「Variables」タブで以下を追加：
 
-#### 3-4. ディスクを追加（重要！）
+| Variable | Value |
+|----------|-------|
+| `GIN_MODE` | `release` |
+| `PORT` | `8080` |
+
+#### 4-3. ボリュームを追加（重要！）
 
 データベースを永続化するため：
 
-1. 「Add Disk」をクリック
-2. **Name**: `selectposition-data`
+1. 「Settings」タブ
+2. 「Volumes」セクションで「+ New Volume」をクリック
 3. **Mount Path**: `/root`
-4. **Size**: `1 GB`
 
-#### 3-5. デプロイ
+保存すると自動的にデプロイが始まります。
 
-「Create Web Service」をクリック
+#### 4-4. 公開URLを取得
 
-数分待つとバックエンドがデプロイされます。
-デプロイ完了後、URLが表示されます（例: `https://selectposition-backend.onrender.com`）
+1. 「Settings」タブ
+2. 「Networking」セクション
+3. 「Generate Domain」をクリック
 
-### 4. フロントエンドをデプロイ
+URLが生成されます（例: `selectposition-backend-production.up.railway.app`）
 
-#### 4-1. 環境変数ファイルを更新
+### 5. フロントエンドをデプロイ
 
-まず、バックエンドのURLを確認して、フロントエンドのコードを更新します。
+#### 5-1. フロントエンドサービスを追加
 
-`frontend/src/App.tsx` の API_URL を更新：
+1. プロジェクトのルートに戻る
+2. 「+ New」をクリック
+3. 「GitHub Repo」→ 同じリポジトリを選択
 
-```typescript
-// ローカル用
-// const API_URL = 'http://localhost:8080/api'
+#### 5-2. フロントエンドの設定
 
-// 本番用（あなたのバックエンドURLに置き換えてください）
-const API_URL = 'https://あなたのバックエンドURL.onrender.com/api'
-```
+1. `frontend` サービスを選択
+2. 「Settings」タブ
+3. **Root Directory**: `frontend` に設定
+4. **Build Command**: `npm install && npm run build`
+5. **Start Command**: `npx serve -s dist -l $PORT`
 
-変更をコミット＆プッシュ：
+#### 5-3. 環境変数を設定
 
-```bash
-git add .
-git commit -m "Update API URL for production"
-git push
-```
+「Variables」タブで以下を追加：
 
-#### 4-2. 新しいStaticサイトを作成
+| Variable | Value |
+|----------|-------|
+| `VITE_API_URL` | `https://あなたのバックエンドURL.railway.app/api` |
 
-1. Renderダッシュボードで「New +」→「Static Site」を選択
-2. 同じリポジトリを選択
+バックエンドのURLは前の手順で取得したものを使用してください。
 
-#### 4-3. フロントエンドの設定
+#### 5-4. 公開URLを取得
 
-- **Name**: `selectposition-frontend`（任意の名前でOK）
-- **Branch**: `main`
-- **Root Directory**: `frontend`
-- **Build Command**: `npm install && npm run build`
-- **Publish Directory**: `dist`
+1. 「Settings」タブ
+2. 「Networking」セクション
+3. 「Generate Domain」をクリック
 
-#### 4-4. デプロイ
+### 6. バックエンドのCORS設定を更新
 
-「Create Static Site」をクリック
+バックエンドの環境変数に追加：
 
-数分待つとフロントエンドがデプロイされます。
-デプロイ完了後、URLが表示されます（例: `https://selectposition-frontend.onrender.com`）
+1. `backend` サービスを選択
+2. 「Variables」タブ
+3. 以下を追加：
 
-### 5. CORS設定を更新
+| Variable | Value |
+|----------|-------|
+| `FRONTEND_URL` | `https://あなたのフロントエンドURL.railway.app` |
 
-バックエンドのCORS設定を更新して、フロントエンドのURLを許可します。
+保存すると自動的に再デプロイされます。
 
-`backend/main.go` を編集：
-
-```go
-r.Use(cors.New(cors.Config{
-    AllowOrigins: []string{
-        "http://localhost:5173", 
-        "http://localhost:5174",
-        "https://あなたのフロントエンドURL.onrender.com", // ← 追加
-    },
-    AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-    AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
-    AllowCredentials: true,
-}))
-```
-
-変更をコミット＆プッシュ：
-
-```bash
-git add .
-git commit -m "Update CORS for production"
-git push
-```
-
-Renderが自動的に再デプロイします。
-
-### 6. 完了！🎉
+### 7. 完了！🎉
 
 フロントエンドのURLにアクセスすると、アプリが動作します！
 
-例: `https://selectposition-frontend.onrender.com`
+例: `https://selectposition-frontend-production.up.railway.app`
 
-## 💡 注意事項
+## 💡 Railway の使い方
 
-### 無料プランの制限
+### 自動デプロイ
 
-- **バックエンド**: 15分間アクセスがないとスリープします（初回アクセス時は起動に30秒程度かかります）
-- **データベース**: 1GBまで無料
-- **帯域幅**: 月100GB無料
-
-### トラブルシューティング
-
-#### バックエンドに接続できない
-
-1. バックエンドのログを確認（Renderダッシュボード → Logs）
-2. CORS設定が正しいか確認
-3. API URLが正しいか確認
-
-#### データベースがリセットされる
-
-- ディスク（Persistent Disk）を追加したか確認
-- マウントパスが `/root` になっているか確認
-
-## 🔄 更新方法
-
-コードを更新したら：
+GitHubにプッシュすると自動的に再デプロイされます：
 
 ```bash
 git add .
-git commit -m "Update features"
+git commit -m "新機能追加"
 git push
 ```
 
-Renderが自動的に検知して再デプロイします！
+### ログの確認
 
-## 📊 モニタリング
+1. サービスを選択
+2. 「Deployments」タブ
+3. 最新のデプロイをクリック
+4. 「View Logs」でログを確認
 
-Renderダッシュボードで以下を確認できます：
+### 使用量の確認
 
-- デプロイ状況
-- ログ
-- CPU/メモリ使用量
-- リクエスト数
+1. プロジェクト画面右上の「Usage」をクリック
+2. 月の使用量と残りクレジットを確認
 
-## 💰 料金
+## ⚠️ 料金について
 
-- **無料プラン**: 個人利用には十分
-- **有料プラン**: スリープなし、より高速（$7/月〜）
+### 無料枠
+
+- **$5/月の無料クレジット**
+- 使い切るまで課金なし
+- 小規模なアプリなら十分
+
+### 使用量の目安
+
+- バックエンド（常時起動）: 約$3-4/月
+- フロントエンド（静的サイト）: 約$0.5-1/月
+- **合計**: 約$4-5/月 → **無料枠内で収まる！**
+
+### 無料クレジットを使い切ったら
+
+1. クレジットカードを登録（従量課金）
+2. サービスを停止
+3. 他のサービスに移行（Fly.io など）
+
+## 🔧 トラブルシューティング
+
+### バックエンドに接続できない
+
+1. バックエンドのログを確認
+2. `PORT` 環境変数が設定されているか確認
+3. ボリュームがマウントされているか確認（`/root`）
+
+### データが保存されない
+
+1. 「Settings」→「Volumes」でボリュームが追加されているか確認
+2. Mount Path が `/root` になっているか確認
+
+### フロントエンドがビルドエラー
+
+1. `VITE_API_URL` が正しく設定されているか確認
+2. ログを確認して、ビルドコマンドが正しいか確認
+
+### 無料クレジットをすぐ使い切ってしまう
+
+1. 使っていないサービスを停止
+2. 開発時はローカルで動作確認
+3. 本番デプロイは必要なときだけ
+
+## 📊 Railwayの管理画面
+
+### Metrics（メトリクス）
+
+- CPU使用率
+- メモリ使用率
+- ネットワーク使用量
+
+### Variables（環境変数）
+
+- 環境変数の追加・編集・削除
+- 変更すると自動的に再デプロイ
+
+### Settings（設定）
+
+- Root Directory: サブディレクトリの指定
+- Build Command: ビルドコマンド
+- Start Command: 起動コマンド
+- Volumes: 永続ボリューム
+
+## 🔄 更新の流れ
+
+```bash
+# 1. コードを修正
+vim frontend/src/App.tsx
+
+# 2. ローカルで確認
+docker-compose up
+
+# 3. コミット & プッシュ
+git add .
+git commit -m "機能改善"
+git push
+
+# 4. Railwayが自動的に再デプロイ（数分待つ）
+```
 
 ## 🆘 サポート
 
 問題が発生した場合：
 
-1. Renderのドキュメント: https://render.com/docs
-2. Renderのコミュニティフォーラム
+1. Railwayのドキュメント: https://docs.railway.app/
+2. Railwayのコミュニティ: https://discord.gg/railway
 3. GitHubのIssue
 
+---
+
+## 📝 設定まとめ
+
+### バックエンド設定
+
+```
+Root Directory: backend
+Environment Variables:
+  - GIN_MODE=release
+  - PORT=8080
+  - FRONTEND_URL=https://your-frontend.railway.app
+Volume:
+  - Mount Path: /root
+```
+
+### フロントエンド設定
+
+```
+Root Directory: frontend
+Build Command: npm install && npm run build
+Start Command: npx serve -s dist -l $PORT
+Environment Variables:
+  - VITE_API_URL=https://your-backend.railway.app/api
+```
+
+---
+
+これでRailwayへのデプロイは完璧です！🚂✨
